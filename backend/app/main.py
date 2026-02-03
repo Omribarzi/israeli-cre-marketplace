@@ -1,12 +1,32 @@
 import os
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import auth, properties, listings, deals, tours, analytics, favorites
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Run migrations on startup
+    try:
+        from alembic.config import Config
+        from alembic import command
+        alembic_cfg = Config("alembic.ini")
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Database migrations completed successfully")
+    except Exception as e:
+        logger.error(f"Migration failed: {e}")
+    yield
+
 
 app = FastAPI(
     title="Nadlan IL - Commercial Real Estate Marketplace",
     description="Israeli commercial real estate leasing and deal management platform",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 allowed_origins = [
