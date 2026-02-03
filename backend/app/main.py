@@ -10,15 +10,14 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Run migrations on startup
+    # Create tables on startup (idempotent - skips existing tables)
     try:
-        from alembic.config import Config
-        from alembic import command
-        alembic_cfg = Config("alembic.ini")
-        command.upgrade(alembic_cfg, "head")
-        logger.info("Database migrations completed successfully")
+        from app.database import engine, Base
+        from app.models import User, Property, PropertyUnit, Listing, Deal, Tour, Favorite, MarketSnapshot
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables verified/created successfully")
     except Exception as e:
-        logger.error(f"Migration failed: {e}")
+        logger.error(f"Database setup failed: {e}")
     yield
 
 
